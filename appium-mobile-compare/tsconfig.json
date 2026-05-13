@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "es2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "baseUrl": "./",
+    "paths": {
+      "~common-utils/*": ["../common-utils/*"]
+    }
+  },
+  "include": [
+    "tests/**/*.ts",
+    "scripts/**/*.ts",
+    "wdio.conf.ts"
+  ]
+}

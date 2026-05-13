@@ -1,0 +1,27 @@
+{
+  "name": "compare-api-root",
+  "version": "1.0.0",
+  "description": "Root workspace for API compare",
+  "scripts": {
+    "test:web": "npm run test --prefix playwright-api-compare",
+    "test:mobile": "npm run test --prefix appium-mobile-compare",
+    "test:all": "concurrently \"npm run test:web\" \"npm run test:mobile\""
+  },
+  "dependencies": {
+    "@types/pixelmatch": "^5.2.6",
+    "@types/pngjs": "^6.0.5",
+    "axios": "^1.7.2",
+    "fs-extra": "^11.2.0",
+    "pixelmatch": "^7.2.0",
+    "pngjs": "^7.0.0",
+    "winston": "^3.13.0"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^20.12.12",
+    "@vercel/ncc": "^0.38.4",
+    "concurrently": "^9.2.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}

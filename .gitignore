@@ -1,0 +1,45 @@
+# Dependencies (all packages; mobile + Playwright called out explicitly)
+node_modules/
+appium-mobile-compare/node_modules/
+playwright-api-compare/node_modules/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Build / coverage
+dist/
+build/
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Playwright
+playwright-api-compare/test-results/
+playwright-api-compare/playwright-report/
+playwright-api-compare/blob-report/
+playwright-api-compare/.cache/
+
+# Appium / mobile runner
+appium-mobile-compare/screenshots/
+appium-mobile-compare/artifacts/
+appium-mobile-compare/.env
+appium-mobile-compare/.env.*
+!appium-mobile-compare/.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE
+.idea/
+
+# Local archives (optional)
+*.zip

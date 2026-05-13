@@ -1,0 +1,26 @@
+{
+  "name": "appium-mobile-compare",
+  "version": "1.0.0",
+  "description": "Appium WDIO comparison framework",
+  "main": "index.js",
+  "scripts": {
+    "pretest": "npm run install-apks",
+    "test": "wdio run wdio.conf.ts",
+    "install-apks": "ts-node scripts/adbInstaller.ts"
+  },
+  "devDependencies": {
+    "@wdio/appium-service": "^8.38.2",
+    "@wdio/cli": "^8.38.2",
+    "@wdio/local-runner": "^8.38.2",
+    "@wdio/mocha-framework": "^8.38.0",
+    "appium": "^2.10.0",
+    "appium-uiautomator2-driver": "^3.5.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "@wdio/spec-reporter": "^9.27.1",
+    "axios": "^1.7.2",
+    "fs-extra": "^11.2.0"
+  }
+}
