@@ -1,6 +1,7 @@
 import * as path from 'path';
 import * as fs from 'fs-extra';
 import { driver, $ } from '@wdio/globals';
+import type { ScreenshotVersionPrefix } from '../../../common-utils/matchScreenshotPaths';
 import { logger } from '../../../common-utils/logger';
 import { buildMatchDeepLink } from '../config/appUnderTest';
 import { openMatchOnDevicesViaAdbView } from '../helpers/adbOpenViewMatch';
@@ -51,12 +52,11 @@ export class MatchPage {
     }
 
     /**
-     * Screens per tab under `baseRunDir/tabs/{summary|scorecard|...}.png`.
-     * @param baseRunDir — e.g. `screenshots/{env}/{udid}/{matchId}/{timestamp}` (parent folder; `tabs/` is created here)
+     * Screens per tab under `baseRunDir/{v2|v3}-{summary|scorecard|...}.png` (prod=v2, UAT=v3).
+     * @param baseRunDir — e.g. `screenshots/{folderSlug}/{timestamp}`
      */
-    async captureTabs(baseRunDir: string) {
-        const tabsDir = path.join(baseRunDir, 'tabs');
-        fs.ensureDirSync(tabsDir);
+    async captureTabs(baseRunDir: string, versionPrefix: ScreenshotVersionPrefix) {
+        fs.ensureDirSync(baseRunDir);
 
         const tabs = [
             { name: 'summary', locator: () => this.summaryTab() },
@@ -66,7 +66,7 @@ export class MatchPage {
             { name: 'news', locator: () => this.newsTab() },
         ];
 
-        logger.info(`[MatchPage] capturing tabs under ${tabsDir}`);
+        logger.info(`[MatchPage] capturing ${versionPrefix}-* tabs under ${baseRunDir}`);
 
         for (const tab of tabs) {
             try {
@@ -74,7 +74,7 @@ export class MatchPage {
                 await el.waitForDisplayed({ timeout: 15000 });
                 await el.click();
                 await driver.pause(1500);
-                const filePath = path.join(tabsDir, `${tab.name}.png`);
+                const filePath = path.join(baseRunDir, `${versionPrefix}-${tab.name}.png`);
                 await driver.saveScreenshot(filePath);
             } catch (err) {
                 console.error(`Could not capture tab ${tab.name}`, err);

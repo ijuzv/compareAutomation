@@ -1,5 +1,11 @@
 import axios from 'axios';
 import { logger } from './logger';
+import {
+  type ActiveMatch,
+  type TickerFixtureRow,
+  buildMatchFolderSlugFromTickerRow,
+  fallbackMatchFolderSlug,
+} from './matchScreenshotPaths';
 
 /**
  * One element of the ticker `Fixtures` array. Match id for deep links is the **root** `Id`
@@ -12,6 +18,8 @@ export interface Fixture {
   IsCompleted: boolean;
   IsLive?: boolean;
 }
+
+export type { ActiveMatch } from './matchScreenshotPaths';
 
 /** When ticker yields no live and no in-window match, use this root `Id` (see MOBILE_FALLBACK_MATCH_ID). */
 const FALLBACK_TICKER_FIXTURE_ID = (() => {
@@ -29,7 +37,15 @@ export class FixtureFetcher {
    * **Ticker field:** each object’s root **`Id`** in `Fixtures[]` (match id for `CA:` URLs), not `Competition.Id`.
    */
   static async getActiveMatchIds(): Promise<number[]> {
-    return FixtureFetcher.getActiveMatchIdsFromUrl(
+    const rows = await FixtureFetcher.getActiveMatches();
+    return rows.map((r) => r.id);
+  }
+
+  /**
+   * Active matches (id + folder slug from HomeTeam/AwayTeam short names) for web screenshots.
+   */
+  static async getActiveMatches(): Promise<ActiveMatch[]> {
+    return FixtureFetcher.getActiveMatchesFromUrl(
       process.env.MOBILE_FIXTURES_URL_PROD ?? DEFAULT_FIXTURES_URL
     );
   }
@@ -40,70 +56,101 @@ export class FixtureFetcher {
    * Override ticker URL with MOBILE_FIXTURES_URL_PROD / MOBILE_FIXTURES_URL_UAT when needed.
    */
   static async getActiveMatchIdsForEnv(env: 'prod' | 'uat'): Promise<number[]> {
+    const rows = await FixtureFetcher.getActiveMatchesForEnv(env);
+    return rows.map((r) => r.id);
+  }
+
+  /**
+   * Active matches for mobile (same ticker selection as ids, plus `folderSlug` for screenshot dirs).
+   */
+  static async getActiveMatchesForEnv(env: 'prod' | 'uat'): Promise<ActiveMatch[]> {
     const url =
       env === 'uat'
         ? process.env.MOBILE_FIXTURES_URL_UAT ?? DEFAULT_FIXTURES_URL
         : process.env.MOBILE_FIXTURES_URL_PROD ?? DEFAULT_FIXTURES_URL;
-    return FixtureFetcher.getActiveMatchIdsFromUrl(url);
+    return FixtureFetcher.getActiveMatchesFromUrl(url);
   }
 
-  private static async getActiveMatchIdsFromUrl(url: string): Promise<number[]> {
+  private static async getActiveMatchesFromUrl(url: string): Promise<ActiveMatch[]> {
+    const fallbackRow = (): ActiveMatch[] => [
+      { id: FALLBACK_TICKER_FIXTURE_ID, folderSlug: fallbackMatchFolderSlug(FALLBACK_TICKER_FIXTURE_ID) },
+    ];
+
     try {
       const response = await axios.get(url);
-      const fixtures: Fixture[] = response.data?.Fixtures || [];
+      const fixtures: TickerFixtureRow[] = response.data?.Fixtures || [];
       const liveOnly = process.env.MOBILE_FIXTURES_LIVE_ONLY === '1';
 
-      const liveIds = fixtures
-        .filter((f) => f.IsLive === true && !f.IsCompleted)
-        .map((f) => f.Id);
-      const uniqueLive = [...new Set(liveIds)];
-
-      if (uniqueLive.length > 0) {
+      const liveFixtures = fixtures.filter((f) => f.IsLive === true && !f.IsCompleted);
+      if (liveFixtures.length > 0) {
+        const seen = new Set<number>();
+        const out: ActiveMatch[] = [];
+        for (const f of liveFixtures) {
+          if (seen.has(f.Id)) continue;
+          seen.add(f.Id);
+          out.push({ id: f.Id, folderSlug: buildMatchFolderSlugFromTickerRow(f) });
+        }
         logger.info(
-          `Ticker ${url}: ${uniqueLive.length} id(s) from Fixtures[].Id where IsLive=true (not completed): ${uniqueLive.join(', ')}`
+          `Ticker ${url}: ${out.length} live match(es): ${out.map((m) => `${m.folderSlug} (${m.id})`).join('; ')}`
         );
-        return uniqueLive;
+        return out;
       }
 
       if (liveOnly) {
         logger.warn(
-          `Ticker ${url}: no IsLive=true rows; MOBILE_FIXTURES_LIVE_ONLY=1. Using fallback Fixtures[].Id=${FALLBACK_TICKER_FIXTURE_ID}.`
+          `Ticker ${url}: no IsLive=true rows; MOBILE_FIXTURES_LIVE_ONLY=1. Using fallback id=${FALLBACK_TICKER_FIXTURE_ID}.`
         );
-        return [FALLBACK_TICKER_FIXTURE_ID];
+        const hit = fixtures.find((f) => f.Id === FALLBACK_TICKER_FIXTURE_ID);
+        return [
+          {
+            id: FALLBACK_TICKER_FIXTURE_ID,
+            folderSlug: hit
+              ? buildMatchFolderSlugFromTickerRow(hit)
+              : fallbackMatchFolderSlug(FALLBACK_TICKER_FIXTURE_ID),
+          },
+        ];
       }
 
       const now = new Date();
-      const windowIds: number[] = [];
+      const windowFixtures = fixtures.filter((f) => {
+        if (f.IsCompleted) return false;
+        const startTime = new Date(f.StartDateTime);
+        const endTime = new Date(f.EndDateTime);
+        return now >= startTime && now <= endTime;
+      });
 
-      for (const fixture of fixtures) {
-        if (!fixture.IsCompleted) {
-          const startTime = new Date(fixture.StartDateTime);
-          const endTime = new Date(fixture.EndDateTime);
-
-          if (now >= startTime && now <= endTime) {
-            windowIds.push(fixture.Id);
-          }
+      if (windowFixtures.length > 0) {
+        const seen = new Set<number>();
+        const out: ActiveMatch[] = [];
+        for (const f of windowFixtures) {
+          if (seen.has(f.Id)) continue;
+          seen.add(f.Id);
+          out.push({ id: f.Id, folderSlug: buildMatchFolderSlugFromTickerRow(f) });
         }
-      }
-
-      const unique = [...new Set(windowIds)];
-      if (unique.length > 0) {
         logger.info(
-          `Ticker ${url}: ${unique.length} id(s) from Fixtures[].Id in current StartDateTime–EndDateTime window (not completed): ${unique.join(', ')}`
+          `Ticker ${url}: ${out.length} in-window match(es): ${out.map((m) => `${m.folderSlug} (${m.id})`).join('; ')}`
         );
-        return unique;
+        return out;
       }
 
       logger.warn(
-        `Ticker ${url}: no IsLive rows and no in-window fixture. Using fallback Fixtures[].Id=${FALLBACK_TICKER_FIXTURE_ID} (MOBILE_FALLBACK_MATCH_ID).`
+        `Ticker ${url}: no IsLive rows and no in-window fixture. Using fallback id=${FALLBACK_TICKER_FIXTURE_ID} (MOBILE_FALLBACK_MATCH_ID).`
       );
-      return [FALLBACK_TICKER_FIXTURE_ID];
+      const hit = fixtures.find((f) => f.Id === FALLBACK_TICKER_FIXTURE_ID);
+      return [
+        {
+          id: FALLBACK_TICKER_FIXTURE_ID,
+          folderSlug: hit
+            ? buildMatchFolderSlugFromTickerRow(hit)
+            : fallbackMatchFolderSlug(FALLBACK_TICKER_FIXTURE_ID),
+        },
+      ];
     } catch (error) {
       logger.error(`Error fetching fixtures from ${url}: ${error}`);
       logger.warn(
-        `Using fallback Fixtures[].Id=${FALLBACK_TICKER_FIXTURE_ID} after ticker error (override: MOBILE_FALLBACK_MATCH_ID).`
+        `Using fallback id=${FALLBACK_TICKER_FIXTURE_ID} after ticker error (override: MOBILE_FALLBACK_MATCH_ID).`
       );
-      return [FALLBACK_TICKER_FIXTURE_ID];
+      return fallbackRow();
     }
   }
 }
