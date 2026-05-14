@@ -9,11 +9,10 @@ export const DEEP_LINK_CONFIG =
     process.env.MOBILE_DEEP_LINK_CONFIG ?? 'cricketapp://config';
 
 /**
- * Base URI for match deep links, must include trailing path segment if required.
- * Example defaults: cricketapp://match/  or  au.com.cricket://match/
+ * Base for match `-d` data URI (append ticker root Id, e.g. …CA:40266).
  */
 const MATCH_DEEP_LINK_BASE =
-    process.env.MOBILE_DEEP_LINK_MATCH_BASE ?? 'cricketapp://match/';
+    process.env.MOBILE_DEEP_LINK_MATCH_BASE ?? 'https://www.cricket.com.au/matches/CA:';
 
 /** Optional list / hub screen when UI navigation is unreliable */
 export const DEEP_LINK_MATCHES_HUB =

@@ -1,21 +1,13 @@
-import { execFileSync } from 'child_process';
+import * as path from 'path';
+import * as fs from 'fs-extra';
 import { driver, $ } from '@wdio/globals';
 import { logger } from '../../../common-utils/logger';
-import { APP_PACKAGE, buildMatchDeepLink, MATCH_VIEW_ACTIVITY_COMPONENT } from '../config/appUnderTest';
+import { buildMatchDeepLink } from '../config/appUnderTest';
+import { openMatchOnDevicesViaAdbView } from '../helpers/adbOpenViewMatch';
 import { dismissAndroidSystemSheets } from '../helpers/ui';
-import { getSessionDeviceSerial } from '../helpers/session';
 
 function tabByTextMatches(pattern: string) {
     return $(`android=new UiSelector().textMatches("${pattern}")`);
-}
-
-async function summaryVisible(timeoutMs: number): Promise<boolean> {
-    try {
-        await tabByTextMatches('(?i)^summary$').waitForDisplayed({ timeout: timeoutMs });
-        return true;
-    } catch {
-        return false;
-    }
 }
 
 export class MatchPage {
@@ -36,61 +28,36 @@ export class MatchPage {
     }
 
     /**
-     * Opens match via `mobile: deepLink`; if Summary does not appear, falls back to the same URI with
-     * `adb shell am start … -n …SplashActivity -d <url>` (logged to combined.log).
+     * After onboarding adb open: wait for Summary on this session’s device.
+     */
+    async waitForSummaryReadyAfterAdb(): Promise<void> {
+        await dismissAndroidSystemSheets(10);
+        await driver.pause(1500);
+        await this.summaryTab().waitForDisplayed({ timeout: 30000 });
+    }
+
+    /**
+     * Opens match on all configured devices via `adb shell am start … VIEW … -d <url>` (no Appium deepLink).
      */
     async openMatchViaDeepLink(matchId: number) {
         await dismissAndroidSystemSheets(10);
         const url = buildMatchDeepLink(matchId);
-        const udid = getSessionDeviceSerial();
-        logger.info(`[MatchPage] udid=${udid} matchId=${matchId} (ticker Fixtures[].Id) deepLink url=${url}`);
-
-        await driver.execute('mobile: deepLink', {
-            url,
-            package: APP_PACKAGE,
-        });
-
-        if (await summaryVisible(12000)) {
-            logger.info(`[MatchPage] udid=${udid} matchId=${matchId} Summary visible after mobile: deepLink`);
-            return;
-        }
-
-        logger.warn(
-            `[MatchPage] udid=${udid} matchId=${matchId} Summary not shown after deepLink; using adb am start VIEW fallback.`
-        );
-
-        if (udid === 'unknown') {
-            throw new Error(
-                '[MatchPage] adb fallback needs appium:udid (got unknown). Set capabilities or MOBILE_FORCE_ENV + udid.'
-            );
-        }
-
-        const adbArgs = [
-            '-s',
-            udid,
-            'shell',
-            'am',
-            'start',
-            '-a',
-            'android.intent.action.VIEW',
-            '-c',
-            'android.intent.category.BROWSABLE',
-            '-n',
-            MATCH_VIEW_ACTIVITY_COMPONENT,
-            '-d',
-            url,
-        ];
-        const adbOneLine = `adb ${adbArgs.map((a) => (a.includes(' ') ? `"${a}"` : a)).join(' ')}`;
-        logger.info(`[MatchPage] adb fallback: ${adbOneLine}`);
-
-        execFileSync('adb', adbArgs, { encoding: 'utf-8', stdio: 'pipe' });
-
+        logger.info(`[MatchPage] adb VIEW matchId=${matchId} url=${url}`);
+        openMatchOnDevicesViaAdbView(matchId);
+        await dismissAndroidSystemSheets(10);
         await driver.pause(2000);
         await this.summaryTab().waitForDisplayed({ timeout: 30000 });
-        logger.info(`[MatchPage] udid=${udid} matchId=${matchId} Summary visible after adb am start`);
+        logger.info(`[MatchPage] matchId=${matchId} Summary visible after adb am start`);
     }
 
-    async captureTabs(saveDir: string) {
+    /**
+     * Screens per tab under `baseRunDir/tabs/{summary|scorecard|...}.png`.
+     * @param baseRunDir — e.g. `screenshots/{env}/{udid}/{matchId}/{timestamp}` (parent folder; `tabs/` is created here)
+     */
+    async captureTabs(baseRunDir: string) {
+        const tabsDir = path.join(baseRunDir, 'tabs');
+        fs.ensureDirSync(tabsDir);
+
         const tabs = [
             { name: 'summary', locator: () => this.summaryTab() },
             { name: 'scorecard', locator: () => this.scorecardTab() },
@@ -99,13 +66,16 @@ export class MatchPage {
             { name: 'news', locator: () => this.newsTab() },
         ];
 
+        logger.info(`[MatchPage] capturing tabs under ${tabsDir}`);
+
         for (const tab of tabs) {
             try {
                 const el = tab.locator();
                 await el.waitForDisplayed({ timeout: 15000 });
                 await el.click();
                 await driver.pause(1500);
-                await driver.saveScreenshot(`${saveDir}/${tab.name}.png`);
+                const filePath = path.join(tabsDir, `${tab.name}.png`);
+                await driver.saveScreenshot(filePath);
             } catch (err) {
                 console.error(`Could not capture tab ${tab.name}`, err);
             }

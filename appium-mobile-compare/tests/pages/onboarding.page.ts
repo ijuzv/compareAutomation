@@ -1,11 +1,21 @@
 import { driver, $ } from '@wdio/globals';
 import { logger } from '../../../common-utils/logger';
 import { buildMatchDeepLink } from '../config/appUnderTest';
+import { openMatchOnDevicesViaAdbView } from '../helpers/adbOpenViewMatch';
 import { getSessionDeviceSerial } from '../helpers/session';
 import { clickIfDisplayed, dismissAndroidSystemSheets, tryClickWithFallbacks } from '../helpers/ui';
 
 const uiSelectorText = (text: string) =>
     $(`android=new UiSelector().text("${text.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}")`);
+
+function firstMatchIdForAdOpen(matchIdsForLog?: number[]): number {
+    const fromList = matchIdsForLog?.find((id) => Number.isFinite(id) && id > 0);
+    if (fromList != null) {
+        return fromList;
+    }
+    const fromEnv = Number.parseInt(process.env.MOBILE_FALLBACK_MATCH_ID ?? '40266', 10);
+    return Number.isNaN(fromEnv) ? 40266 : fromEnv;
+}
 
 /**
  * After config: DONE → Enter (landing) → on START screen press Android back (no START tap).
@@ -81,6 +91,10 @@ async function tapDoneEnterThenBackFromStartScreen(matchIdsForLog?: number[]): P
 
     await driver.pause(500);
     await driver.back();
+
+    const matchIdForOpen = firstMatchIdForAdOpen(matchIdsForLog);
+    logger.info(`[Onboarding] after START back: adb VIEW open matchId=${matchIdForOpen} on all default emulators`);
+    openMatchOnDevicesViaAdbView(matchIdForOpen);
 }
 
 export const OnboardingPage = {

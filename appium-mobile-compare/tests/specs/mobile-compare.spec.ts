@@ -2,7 +2,6 @@ import { FixtureFetcher } from '../../../common-utils/fixtureFetcher';
 import { APP_PACKAGE, DEEP_LINK_CONFIG } from '../config/appUnderTest';
 import ConfigPage from '../pages/config.page';
 import MatchPage from '../pages/match.page';
-import {MatchesPage} from '../pages/matches.page';
 import { OnboardingPage } from '../pages/onboarding.page';
 import * as path from 'path';
 import * as fs from 'fs-extra';
@@ -41,7 +40,6 @@ describe('Appium Mobile API Compare', () => {
         await OnboardingPage.dismissOptionalDialogs();
         await ConfigPage.selectEnvironmentByDevice(deviceSerial);
         await OnboardingPage.completeAfterEnvironment(activeMatchIds);
-        await MatchesPage.goToLiveMatches();
     });
 
     it('should capture tabs for all active matches', async () => {
@@ -49,17 +47,26 @@ describe('Appium Mobile API Compare', () => {
 
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
 
-        for (const matchId of activeMatchIds) {
+        for (let i = 0; i < activeMatchIds.length; i++) {
+            const matchId = activeMatchIds[i];
             console.log(`Processing Match ID: ${matchId} on ${envName}`);
 
-            const saveDir = path.resolve(
+            const baseRunDir = path.resolve(
                 __dirname,
-                `../../screenshots/${envName}/${matchId}/${timestamp}`
+                '../../screenshots',
+                envName,
+                deviceSerial,
+                String(matchId),
+                timestamp
             );
-            fs.ensureDirSync(saveDir);
+            fs.ensureDirSync(baseRunDir);
 
-            await MatchPage.openMatchViaDeepLink(matchId);
-            await MatchPage.captureTabs(saveDir);
+            if (i === 0) {
+                await MatchPage.waitForSummaryReadyAfterAdb();
+            } else {
+                await MatchPage.openMatchViaDeepLink(matchId);
+            }
+            await MatchPage.captureTabs(baseRunDir);
         }
     });
 });
