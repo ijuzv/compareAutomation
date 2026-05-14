@@ -1,52 +1,98 @@
 import { driver, $ } from '@wdio/globals';
-import { clickIfDisplayed } from '../helpers/ui';
+import { logger } from '../../../common-utils/logger';
+import { buildMatchDeepLink } from '../config/appUnderTest';
+import { getSessionDeviceSerial } from '../helpers/session';
+import { clickIfDisplayed, dismissAndroidSystemSheets, tryClickWithFallbacks } from '../helpers/ui';
 
 const uiSelectorText = (text: string) =>
     $(`android=new UiSelector().text("${text.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}")`);
 
 /**
- * First-run / system dialogs before environment selection.
+ * After config: DONE → Enter (landing) → on START screen press Android back (no START tap).
+ * Logs Enter + emulator udid + planned match deep links to `logs/combined.log`.
  */
-async function dismissOptionalOk(): Promise<void> {
-    const ok = uiSelectorText('OK');
-    await clickIfDisplayed(ok, { timeoutMs: 4000, label: 'OK' });
-}
+async function tapDoneEnterThenBackFromStartScreen(matchIdsForLog?: number[]): Promise<void> {
+    const doneLocators = [uiSelectorText('DONE'), $(`android=new UiSelector().textMatches("(?i)^done$")`)];
+    for (const done of doneLocators) {
+        if (await clickIfDisplayed(done, { timeoutMs: 12000, label: 'DONE' })) {
+            break;
+        }
+    }
 
-async function dismissOptionalDontAllow(): Promise<void> {
-    const dontAllow = $(`android=new UiSelector().text("Don't allow")`);
-    await clickIfDisplayed(dontAllow, { timeoutMs: 4000, label: "Don't allow" });
-}
+    await driver.pause(2600);
 
-/**
- * Steps after environment + UPDATE: DONE, ENTER, optional OK, START.
- */
-async function tapDoneEnterOkStart(): Promise<void> {
-    const done = uiSelectorText('DONE');
-    await clickIfDisplayed(done, { timeoutMs: 15000, label: 'DONE' });
+    const enterLocators = [
+        $('//android.widget.TextView[@text="Enter"]'),
+        $('//android.widget.TextView[@text="Enter"]/..'),
+        $('//*[@clickable="true" and (@text="Enter" or @text="ENTER")]'),
+        $('//*[contains(@content-desc, "Enter") or contains(@content-desc, "enter")]'),
+        $(`android=new UiSelector().textContains("Enter")`),
+        uiSelectorText('Enter'),
+        $(`android=new UiSelector().textMatches("(?i)^\\s*enter\\s*$")`),
+        uiSelectorText('ENTER'),
+    ];
 
-    const enter = uiSelectorText('ENTER');
-    await clickIfDisplayed(enter, { timeoutMs: 15000, label: 'ENTER' });
+    let enterOk = false;
+    for (const enter of enterLocators) {
+        if (await tryClickWithFallbacks(enter, { timeoutMs: 9000, label: 'Enter' })) {
+            enterOk = true;
+            break;
+        }
+    }
 
-    const ok = uiSelectorText('OK');
-    await clickIfDisplayed(ok, { timeoutMs: 4000, label: 'OK (post ENTER)' });
+    if (!enterOk) {
+        throw new Error(
+            '[onboarding] Could not tap Enter after DONE. Inspect toolbar text/content-desc in UiAutomator.'
+        );
+    }
 
-    const start = uiSelectorText('START');
-    await clickIfDisplayed(start, { timeoutMs: 15000, label: 'START' });
+    const udid = getSessionDeviceSerial();
+    logger.info(
+        `[Onboarding] Enter tapped udid=${udid}` +
+            (matchIdsForLog?.length ? `; ticker fixture id(s) for this run: ${matchIdsForLog.join(', ')}` : '')
+    );
+    if (matchIdsForLog?.length) {
+        const urls = matchIdsForLog.map((id) => buildMatchDeepLink(id)).join(' | ');
+        logger.info(`[Onboarding] Match deep link URL(s) after Enter (same as MatchPage will use): ${urls}`);
+    }
+
+    await dismissAndroidSystemSheets(10);
+
+    const startLocators = [
+        uiSelectorText('START'),
+        $(`android=new UiSelector().textMatches("(?i)^start$")`),
+        $(`android=new UiSelector().text("Start")`),
+    ];
+
+    let startSeen = false;
+    for (const start of startLocators) {
+        try {
+            await start.waitForDisplayed({ timeout: 15000 });
+            startSeen = true;
+            break;
+        } catch {
+            // try next locator
+        }
+    }
+
+    if (!startSeen) {
+        throw new Error('[onboarding] START not visible after Enter; cannot run back on that screen.');
+    }
+
+    await driver.pause(500);
+    await driver.back();
 }
 
 export const OnboardingPage = {
+    /** Compatibility + notification sheets (Don't show again / Don't allow). */
     async dismissOptionalDialogs(): Promise<void> {
-        await dismissOptionalOk();
-        await dismissOptionalDontAllow();
+        await dismissAndroidSystemSheets(14);
     },
 
-    async completeAfterEnvironment(): Promise<void> {
-        await tapDoneEnterOkStart();
-    },
-
-    /** After START: back once then caller navigates to matches. */
-    async backFromStart(): Promise<void> {
-        await driver.pause(500);
-        await driver.back();
+    /**
+     * @param matchIdsForLog — fixture root ids from ticker; logged to combined.log with full deep link URLs after Enter.
+     */
+    async completeAfterEnvironment(matchIdsForLog?: number[]): Promise<void> {
+        await tapDoneEnterThenBackFromStartScreen(matchIdsForLog);
     },
 };

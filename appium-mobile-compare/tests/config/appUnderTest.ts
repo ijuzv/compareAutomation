@@ -22,3 +22,9 @@ export const DEEP_LINK_MATCHES_HUB =
 export function buildMatchDeepLink(matchId: number): string {
     return `${MATCH_DEEP_LINK_BASE}${matchId}`;
 }
+
+/**
+ * `-n` component for `adb shell am start …` VIEW match URLs (default matches your manual command).
+ */
+export const MATCH_VIEW_ACTIVITY_COMPONENT =
+    process.env.MOBILE_ADB_VIEW_COMPONENT ?? `${APP_PACKAGE}/.ui.SplashActivity`;

@@ -7,17 +7,18 @@ function readCaps(): CapabilitiesRecord {
 }
 
 /**
- * Resolves the adb serial / emulator id for this worker (W3C uses appium:deviceName).
+ * Resolves the adb serial / emulator id for this worker.
+ * Prefer appium:udid when set (required for parallel workers); fall back to appium:deviceName.
  */
 export function getSessionDeviceSerial(): string {
     const caps = readCaps();
-    const fromAppium = caps['appium:deviceName'];
-    if (typeof fromAppium === 'string' && fromAppium.length > 0) {
-        return fromAppium;
-    }
     const udid = caps['appium:udid'];
     if (typeof udid === 'string' && udid.length > 0) {
         return udid;
+    }
+    const fromAppium = caps['appium:deviceName'];
+    if (typeof fromAppium === 'string' && fromAppium.length > 0) {
+        return fromAppium;
     }
     const deviceName = caps.deviceName;
     if (typeof deviceName === 'string' && deviceName.length > 0) {

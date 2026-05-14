@@ -23,8 +23,10 @@ describe('Appium Mobile API Compare', () => {
         activeMatchIds = await FixtureFetcher.getActiveMatchIdsForEnv(envName);
 
         if (activeMatchIds.length === 0) {
-            console.log('No active matches found. Using fallback ID 4589.');
-            activeMatchIds = [4589];
+            console.log(
+                'No match ids from FixtureFetcher (should not happen: server uses fallback 40266). Using [40266].'
+            );
+            activeMatchIds = [40266];
         }
 
         if (process.env.MOBILE_USE_LEGACY_CONFIG === '1') {
@@ -38,8 +40,7 @@ describe('Appium Mobile API Compare', () => {
 
         await OnboardingPage.dismissOptionalDialogs();
         await ConfigPage.selectEnvironmentByDevice(deviceSerial);
-        await OnboardingPage.completeAfterEnvironment();
-        await OnboardingPage.backFromStart();
+        await OnboardingPage.completeAfterEnvironment(activeMatchIds);
         await MatchesPage.goToLiveMatches();
     });
 
