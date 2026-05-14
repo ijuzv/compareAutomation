@@ -11,7 +11,7 @@
     "grepInvert": null,
     "maxFailures": 0,
     "metadata": {
-      "actualWorkers": 3
+      "actualWorkers": 1
     },
     "preserveOutput": "always",
     "projects": [
@@ -20,7 +20,7 @@
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
-          "actualWorkers": 3
+          "actualWorkers": 1
         },
         "id": "Chromium",
         "name": "Chromium",
@@ -29,39 +29,7 @@
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
         ],
-        "timeout": 30000
-      },
-      {
-        "outputDir": "C:/Users/SSTNRL02/Projects/SST/compareAPI/playwright-api-compare/test-results",
-        "repeatEach": 1,
-        "retries": 0,
-        "metadata": {
-          "actualWorkers": 3
-        },
-        "id": "Firefox",
-        "name": "Firefox",
-        "testDir": "C:/Users/SSTNRL02/Projects/SST/compareAPI/playwright-api-compare/tests/specs",
-        "testIgnore": [],
-        "testMatch": [
-          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
-        ],
-        "timeout": 30000
-      },
-      {
-        "outputDir": "C:/Users/SSTNRL02/Projects/SST/compareAPI/playwright-api-compare/test-results",
-        "repeatEach": 1,
-        "retries": 0,
-        "metadata": {
-          "actualWorkers": 3
-        },
-        "id": "WebKit",
-        "name": "WebKit",
-        "testDir": "C:/Users/SSTNRL02/Projects/SST/compareAPI/playwright-api-compare/tests/specs",
-        "testIgnore": [],
-        "testMatch": [
-          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
-        ],
-        "timeout": 30000
+        "timeout": 180000
       }
     ],
     "quiet": false,
@@ -104,18 +72,18 @@
       "specs": [],
       "suites": [
         {
-          "title": "API and Visual Comparison Suite",
+          "title": "UAT and production match pages",
           "file": "api-compare.spec.ts",
-          "line": 9,
+          "line": 17,
           "column": 6,
           "specs": [
             {
-              "title": "Compare active matches across all tabs",
-              "ok": false,
+              "title": "open CA match URLs, tabs when available, save screenshots",
+              "ok": true,
               "tags": [],
               "tests": [
                 {
-                  "timeout": 30000,
+                  "timeout": 180000,
                   "annotations": [],
                   "expectedStatus": "passed",
                   "projectId": "Chromium",
@@ -124,154 +92,78 @@
                     {
                       "workerIndex": 0,
                       "parallelIndex": 0,
-                      "status": "failed",
-                      "duration": 3,
-                      "error": {
-                        "message": "Error: browserType.launch: Executable doesn't exist at C:\\Users\\SSTNRL02\\AppData\\Local\\ms-playwright\\chromium_headless_shell-1223\\chrome-headless-shell-win64\\chrome-headless-shell.exe\n╔════════════════════════════════════════════════════════════╗\n║ Looks like Playwright was just installed or updated.       ║\n║ Please run the following command to download new browsers: ║\n║                                                            ║\n║     npx playwright install                                 ║\n║                                                            ║\n║ <3 Playwright Team                                         ║\n╚════════════════════════════════════════════════════════════╝",
-                        "stack": "Error: browserType.launch: Executable doesn't exist at C:\\Users\\SSTNRL02\\AppData\\Local\\ms-playwright\\chromium_headless_shell-1223\\chrome-headless-shell-win64\\chrome-headless-shell.exe\n╔════════════════════════════════════════════════════════════╗\n║ Looks like Playwright was just installed or updated.       ║\n║ Please run the following command to download new browsers: ║\n║                                                            ║\n║     npx playwright install                                 ║\n║                                                            ║\n║ <3 Playwright Team                                         ║\n╚════════════════════════════════════════════════════════════╝"
-                      },
-                      "errors": [
-                        {
-                          "message": "Error: browserType.launch: Executable doesn't exist at C:\\Users\\SSTNRL02\\AppData\\Local\\ms-playwright\\chromium_headless_shell-1223\\chrome-headless-shell-win64\\chrome-headless-shell.exe\n╔════════════════════════════════════════════════════════════╗\n║ Looks like Playwright was just installed or updated.       ║\n║ Please run the following command to download new browsers: ║\n║                                                            ║\n║     npx playwright install                                 ║\n║                                                            ║\n║ <3 Playwright Team                                         ║\n╚════════════════════════════════════════════════════════════╝"
-                        }
-                      ],
+                      "status": "passed",
+                      "duration": 15754,
+                      "errors": [],
                       "stdout": [
                         {
-                          "text": "[2026-05-13T11:58:56.543Z] \u001b[32MINFO\u001b[39M: Found 0 active matches: \r\n"
+                          "text": "[2026-05-14T19:36:12.289Z] \u001b[33MWARN\u001b[39M: Ticker https://apiv2.cricket.com.au/web/matchticker/fixtures?Region=AU&format=json: no IsLive rows and no in-window fixture. Using fallback Fixtures[].Id=40266 (MOBILE_FALLBACK_MATCH_ID).\r\n"
                         },
                         {
-                          "text": "[2026-05-13T11:58:56.547Z] \u001b[32MINFO\u001b[39M: No active matches found for Playwright run. Using fallback ID 4589.\r\n"
+                          "text": "[2026-05-14T19:36:12.995Z] \u001b[32MINFO\u001b[39M: Capturing UAT + prod for /matches/CA:40266 (ticker id 40266)\r\n"
+                        },
+                        {
+                          "text": "[2026-05-14T19:36:19.195Z] \u001b[32MINFO\u001b[39M: Saved prod summary → C:\\Users\\SSTNRL02\\Projects\\SST\\compareAPI\\playwright-api-compare\\screenshots\\prod\\40266\\summary-2026-05-14T19-36-12-995Z.png\r\n"
+                        },
+                        {
+                          "text": "[2026-05-14T19:36:21.179Z] \u001b[32MINFO\u001b[39M: Saved prod scorecard → C:\\Users\\SSTNRL02\\Projects\\SST\\compareAPI\\playwright-api-compare\\screenshots\\prod\\40266\\scorecard-2026-05-14T19-36-12-995Z.png\r\n"
+                        },
+                        {
+                          "text": "[2026-05-14T19:36:21.220Z] \u001b[32MINFO\u001b[39M: Skip prod / live-blog: tab not offered on this build (optional).\r\n"
+                        },
+                        {
+                          "text": "[2026-05-14T19:36:21.261Z] \u001b[32MINFO\u001b[39M: Skip prod / video: tab not offered on this build (optional).\r\n"
+                        },
+                        {
+                          "text": "[2026-05-14T19:36:23.494Z] \u001b[32MINFO\u001b[39M: Saved prod commentary → C:\\Users\\SSTNRL02\\Projects\\SST\\compareAPI\\playwright-api-compare\\screenshots\\prod\\40266\\commentary-2026-05-14T19-36-12-995Z.png\r\n"
+                        },
+                        {
+                          "text": "[2026-05-14T19:36:23.516Z] \u001b[32MINFO\u001b[39M: Skip prod / news: tab not offered on this build (optional).\r\n"
+                        },
+                        {
+                          "text": "[2026-05-14T19:36:23.906Z] \u001b[32MINFO\u001b[39M: Saved uat summary → C:\\Users\\SSTNRL02\\Projects\\SST\\compareAPI\\playwright-api-compare\\screenshots\\uat\\40266\\summary-2026-05-14T19-36-12-995Z.png\r\n"
+                        },
+                        {
+                          "text": "[2026-05-14T19:36:25.036Z] \u001b[32MINFO\u001b[39M: Saved prod graphs → C:\\Users\\SSTNRL02\\Projects\\SST\\compareAPI\\playwright-api-compare\\screenshots\\prod\\40266\\graphs-2026-05-14T19-36-12-995Z.png\r\n"
+                        },
+                        {
+                          "text": "[2026-05-14T19:36:25.055Z] \u001b[32MINFO\u001b[39M: Skip prod / more: tab not offered on this build (optional).\r\n"
+                        },
+                        {
+                          "text": "[2026-05-14T19:36:25.236Z] \u001b[32MINFO\u001b[39M: Saved uat scorecard → C:\\Users\\SSTNRL02\\Projects\\SST\\compareAPI\\playwright-api-compare\\screenshots\\uat\\40266\\scorecard-2026-05-14T19-36-12-995Z.png\r\n"
+                        },
+                        {
+                          "text": "[2026-05-14T19:36:25.250Z] \u001b[32MINFO\u001b[39M: Skip uat / live-blog: tab not offered on this build (optional).\r\n"
+                        },
+                        {
+                          "text": "[2026-05-14T19:36:25.264Z] \u001b[32MINFO\u001b[39M: Skip uat / video: tab not offered on this build (optional).\r\n"
+                        },
+                        {
+                          "text": "[2026-05-14T19:36:26.901Z] \u001b[32MINFO\u001b[39M: Saved uat commentary → C:\\Users\\SSTNRL02\\Projects\\SST\\compareAPI\\playwright-api-compare\\screenshots\\uat\\40266\\commentary-2026-05-14T19-36-12-995Z.png\r\n"
+                        },
+                        {
+                          "text": "[2026-05-14T19:36:26.913Z] \u001b[32MINFO\u001b[39M: Skip uat / news: tab not offered on this build (optional).\r\n"
+                        },
+                        {
+                          "text": "[2026-05-14T19:36:28.043Z] \u001b[32MINFO\u001b[39M: Saved uat graphs → C:\\Users\\SSTNRL02\\Projects\\SST\\compareAPI\\playwright-api-compare\\screenshots\\uat\\40266\\graphs-2026-05-14T19-36-12-995Z.png\r\n"
+                        },
+                        {
+                          "text": "[2026-05-14T19:36:28.057Z] \u001b[32MINFO\u001b[39M: Skip uat / more: tab not offered on this build (optional).\r\n"
                         }
                       ],
                       "stderr": [],
                       "retry": 0,
-                      "startTime": "2026-05-13T11:58:55.810Z",
+                      "startTime": "2026-05-14T19:36:11.647Z",
                       "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "C:\\Users\\SSTNRL02\\Projects\\SST\\compareAPI\\playwright-api-compare\\test-results\\api-compare-API-and-Visual-872fe-ive-matches-across-all-tabs-Chromium\\error-context.md"
-                        }
-                      ]
+                      "attachments": []
                     }
                   ],
-                  "status": "unexpected"
+                  "status": "expected"
                 }
               ],
-              "id": "bfd14b0aefac379ef233-1347a4274b8b54a03fa8",
+              "id": "bfd14b0aefac379ef233-953b898570edaf957e86",
               "file": "api-compare.spec.ts",
-              "line": 20,
-              "column": 7
-            },
-            {
-              "title": "Compare active matches across all tabs",
-              "ok": false,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "Firefox",
-                  "projectName": "Firefox",
-                  "results": [
-                    {
-                      "workerIndex": 1,
-                      "parallelIndex": 1,
-                      "status": "failed",
-                      "duration": 2,
-                      "error": {
-                        "message": "Error: browserType.launch: Executable doesn't exist at C:\\Users\\SSTNRL02\\AppData\\Local\\ms-playwright\\firefox-1522\\firefox\\firefox.exe\n╔════════════════════════════════════════════════════════════╗\n║ Looks like Playwright was just installed or updated.       ║\n║ Please run the following command to download new browsers: ║\n║                                                            ║\n║     npx playwright install                                 ║\n║                                                            ║\n║ <3 Playwright Team                                         ║\n╚════════════════════════════════════════════════════════════╝",
-                        "stack": "Error: browserType.launch: Executable doesn't exist at C:\\Users\\SSTNRL02\\AppData\\Local\\ms-playwright\\firefox-1522\\firefox\\firefox.exe\n╔════════════════════════════════════════════════════════════╗\n║ Looks like Playwright was just installed or updated.       ║\n║ Please run the following command to download new browsers: ║\n║                                                            ║\n║     npx playwright install                                 ║\n║                                                            ║\n║ <3 Playwright Team                                         ║\n╚════════════════════════════════════════════════════════════╝"
-                      },
-                      "errors": [
-                        {
-                          "message": "Error: browserType.launch: Executable doesn't exist at C:\\Users\\SSTNRL02\\AppData\\Local\\ms-playwright\\firefox-1522\\firefox\\firefox.exe\n╔════════════════════════════════════════════════════════════╗\n║ Looks like Playwright was just installed or updated.       ║\n║ Please run the following command to download new browsers: ║\n║                                                            ║\n║     npx playwright install                                 ║\n║                                                            ║\n║ <3 Playwright Team                                         ║\n╚════════════════════════════════════════════════════════════╝"
-                        }
-                      ],
-                      "stdout": [
-                        {
-                          "text": "[2026-05-13T11:58:56.525Z] \u001b[32MINFO\u001b[39M: Found 0 active matches: \r\n"
-                        },
-                        {
-                          "text": "[2026-05-13T11:58:56.529Z] \u001b[32MINFO\u001b[39M: No active matches found for Playwright run. Using fallback ID 4589.\r\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-05-13T11:58:56.189Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "C:\\Users\\SSTNRL02\\Projects\\SST\\compareAPI\\playwright-api-compare\\test-results\\api-compare-API-and-Visual-872fe-ive-matches-across-all-tabs-Firefox\\error-context.md"
-                        }
-                      ]
-                    }
-                  ],
-                  "status": "unexpected"
-                }
-              ],
-              "id": "bfd14b0aefac379ef233-ec33ff494a80fd89372f",
-              "file": "api-compare.spec.ts",
-              "line": 20,
-              "column": 7
-            },
-            {
-              "title": "Compare active matches across all tabs",
-              "ok": false,
-              "tags": [],
-              "tests": [
-                {
-                  "timeout": 30000,
-                  "annotations": [],
-                  "expectedStatus": "passed",
-                  "projectId": "WebKit",
-                  "projectName": "WebKit",
-                  "results": [
-                    {
-                      "workerIndex": 2,
-                      "parallelIndex": 2,
-                      "status": "failed",
-                      "duration": 7,
-                      "error": {
-                        "message": "Error: browserType.launch: Executable doesn't exist at C:\\Users\\SSTNRL02\\AppData\\Local\\ms-playwright\\webkit-2287\\Playwright.exe\n╔════════════════════════════════════════════════════════════╗\n║ Looks like Playwright was just installed or updated.       ║\n║ Please run the following command to download new browsers: ║\n║                                                            ║\n║     npx playwright install                                 ║\n║                                                            ║\n║ <3 Playwright Team                                         ║\n╚════════════════════════════════════════════════════════════╝",
-                        "stack": "Error: browserType.launch: Executable doesn't exist at C:\\Users\\SSTNRL02\\AppData\\Local\\ms-playwright\\webkit-2287\\Playwright.exe\n╔════════════════════════════════════════════════════════════╗\n║ Looks like Playwright was just installed or updated.       ║\n║ Please run the following command to download new browsers: ║\n║                                                            ║\n║     npx playwright install                                 ║\n║                                                            ║\n║ <3 Playwright Team                                         ║\n╚════════════════════════════════════════════════════════════╝"
-                      },
-                      "errors": [
-                        {
-                          "message": "Error: browserType.launch: Executable doesn't exist at C:\\Users\\SSTNRL02\\AppData\\Local\\ms-playwright\\webkit-2287\\Playwright.exe\n╔════════════════════════════════════════════════════════════╗\n║ Looks like Playwright was just installed or updated.       ║\n║ Please run the following command to download new browsers: ║\n║                                                            ║\n║     npx playwright install                                 ║\n║                                                            ║\n║ <3 Playwright Team                                         ║\n╚════════════════════════════════════════════════════════════╝"
-                        }
-                      ],
-                      "stdout": [
-                        {
-                          "text": "[2026-05-13T11:58:56.543Z] \u001b[32MINFO\u001b[39M: Found 0 active matches: \r\n"
-                        },
-                        {
-                          "text": "[2026-05-13T11:58:56.546Z] \u001b[32MINFO\u001b[39M: No active matches found for Playwright run. Using fallback ID 4589.\r\n"
-                        }
-                      ],
-                      "stderr": [],
-                      "retry": 0,
-                      "startTime": "2026-05-13T11:58:55.525Z",
-                      "annotations": [],
-                      "attachments": [
-                        {
-                          "name": "error-context",
-                          "contentType": "text/markdown",
-                          "path": "C:\\Users\\SSTNRL02\\Projects\\SST\\compareAPI\\playwright-api-compare\\test-results\\api-compare-API-and-Visual-872fe-ive-matches-across-all-tabs-WebKit\\error-context.md"
-                        }
-                      ]
-                    }
-                  ],
-                  "status": "unexpected"
-                }
-              ],
-              "id": "bfd14b0aefac379ef233-37f536a7ac3f12b74eb5",
-              "file": "api-compare.spec.ts",
-              "line": 20,
+              "line": 24,
               "column": 7
             }
           ]
@@ -281,11 +173,11 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2026-05-13T11:58:52.494Z",
-    "duration": 4547.161,
-    "expected": 0,
+    "startTime": "2026-05-14T19:36:10.116Z",
+    "duration": 18383.720999999998,
+    "expected": 1,
     "skipped": 0,
-    "unexpected": 3,
+    "unexpected": 0,
     "flaky": 0
   }
 }

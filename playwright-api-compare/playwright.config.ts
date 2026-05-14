@@ -6,6 +6,8 @@ import { ENV } from './configs/env';
  */
 export default defineConfig({
   testDir: './tests/specs',
+  /** UAT + prod, many tabs — default 30s is too low (parallel pages get closed on timeout). */
+  timeout: 180_000,
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
@@ -32,19 +34,14 @@ export default defineConfig({
     headless: ENV.HEADLESS,
   },
 
-  /* Configure projects for major browsers */
+  /* Chromium only: enough for UAT/prod screenshots; smaller install (`npx playwright install chromium`). */
   projects: [
-    {
-      name: 'Chromium',
-      use: { ...devices['Desktop Chrome'] },
-    },
-    {
-      name: 'Firefox',
-      use: { ...devices['Desktop Firefox'] },
-    },
-    {
-      name: 'WebKit',
-      use: { ...devices['Desktop Safari'] },
-    },
+    { name: 'Chromium', use: { ...devices['Desktop Chrome'] } },
+    ...(process.env.PLAYWRIGHT_ALL_BROWSERS === '1'
+      ? [
+          { name: 'Firefox', use: { ...devices['Desktop Firefox'] } },
+          { name: 'WebKit', use: { ...devices['Desktop Safari'] } },
+        ]
+      : []),
   ],
 });
