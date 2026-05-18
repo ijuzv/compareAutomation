@@ -5,7 +5,7 @@ import type { ScreenshotVersionPrefix } from '../../../common-utils/matchScreens
 import { logger } from '../../../common-utils/logger';
 import { buildMatchDeepLink } from '../config/appUnderTest';
 import { openMatchOnDevicesViaAdbView } from '../helpers/adbOpenViewMatch';
-import { dismissAndroidSystemSheets } from '../helpers/ui';
+import { dismissAndroidSystemSheets, waitForMatchTabContentReady } from '../helpers/ui';
 
 function tabByTextMatches(pattern: string) {
     return $(`android=new UiSelector().textMatches("${pattern}")`);
@@ -35,6 +35,7 @@ export class MatchPage {
         await dismissAndroidSystemSheets(10);
         await driver.pause(1500);
         await this.summaryTab().waitForDisplayed({ timeout: 30000 });
+        await waitForMatchTabContentReady();
     }
 
     /**
@@ -48,6 +49,7 @@ export class MatchPage {
         await dismissAndroidSystemSheets(10);
         await driver.pause(2000);
         await this.summaryTab().waitForDisplayed({ timeout: 30000 });
+        await waitForMatchTabContentReady();
         logger.info(`[MatchPage] matchId=${matchId} Summary visible after adb am start`);
     }
 
@@ -73,9 +75,10 @@ export class MatchPage {
                 const el = tab.locator();
                 await el.waitForDisplayed({ timeout: 15000 });
                 await el.click();
-                await driver.pause(1500);
+                await waitForMatchTabContentReady();
                 const filePath = path.join(baseRunDir, `${versionPrefix}-${tab.name}.png`);
                 await driver.saveScreenshot(filePath);
+                logger.info(`[MatchPage] saved ${path.basename(filePath)}`);
             } catch (err) {
                 console.error(`Could not capture tab ${tab.name}`, err);
             }

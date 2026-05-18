@@ -101,6 +101,9 @@ function dontAllowLocators(): ChainablePromiseElement<WebdriverIO.Element>[] {
 
 const SYSTEM_SHEET_PER_LOCATOR_MS = 900;
 
+/** Notification permission — tap at most once per Appium worker/session. */
+let dontAllowHandledForSession = false;
+
 /**
  * Tries each locator until one is clicked. Returns true if any tap succeeded.
  */
@@ -148,23 +151,55 @@ export async function dismissDontShowAgainWhileVisible(maxPasses = 12): Promise<
 }
 
 export async function dismissDontAllowWhileVisible(maxPasses = 12): Promise<void> {
+    if (dontAllowHandledForSession) {
+        return;
+    }
     for (let i = 0; i < maxPasses; i++) {
         const hit = await clickDontAllowIfAnyVisible(SYSTEM_SHEET_PER_LOCATOR_MS);
         if (!hit) {
             return;
         }
-        await driver.pause(450);
+        dontAllowHandledForSession = true;
+        return;
     }
 }
 
 /**
  * Catches system UI that can appear anytime: "Don't Show Again" (e.g. 16 KB compatibility)
- * and "Don't allow" (notification permission). Stops when neither is found for a pass.
+ * and "Don't allow" (notification permission, once per session). Stops when neither is found for a pass.
  */
+function matchContentProgress() {
+    return $('android=new UiSelector().className("android.widget.ProgressBar")');
+}
+
+/**
+ * After a match tab tap: wait for indeterminate progress to finish, then brief settle (mirrors web `settlePage`).
+ */
+export async function waitForMatchTabContentReady(options: { timeoutMs?: number } = {}): Promise<void> {
+    const timeout = options.timeoutMs ?? 45_000;
+    const settleMs = 900;
+    const progress = matchContentProgress();
+
+    try {
+        await progress.waitForDisplayed({ timeout: 4000 });
+        await progress.waitForDisplayed({ timeout, reverse: true });
+    } catch {
+        // No spinner, or content already loaded.
+    }
+
+    await driver.pause(settleMs);
+}
+
 export async function dismissAndroidSystemSheets(maxPasses = 14): Promise<void> {
     for (let i = 0; i < maxPasses; i++) {
         const showAgain = await clickDontShowAgainIfAnyVisible(SYSTEM_SHEET_PER_LOCATOR_MS);
-        const denyNotif = await clickDontAllowIfAnyVisible(SYSTEM_SHEET_PER_LOCATOR_MS);
+        let denyNotif = false;
+        if (!dontAllowHandledForSession) {
+            denyNotif = await clickDontAllowIfAnyVisible(SYSTEM_SHEET_PER_LOCATOR_MS);
+            if (denyNotif) {
+                dontAllowHandledForSession = true;
+            }
+        }
         if (!showAgain && !denyNotif) {
             return;
         }

@@ -1,10 +1,12 @@
 import axios from 'axios';
+import https from 'node:https';
 import { logger } from './logger';
 import {
   type ActiveMatch,
   type TickerFixtureRow,
   buildMatchFolderSlugFromTickerRow,
   fallbackMatchFolderSlug,
+  folderSlugOverrideFromEnv,
 } from './matchScreenshotPaths';
 
 /**
@@ -30,6 +32,8 @@ const FALLBACK_TICKER_FIXTURE_ID = (() => {
 /** Public match ticker used for prod and UAT workers unless overridden per env. */
 const DEFAULT_FIXTURES_URL =
   'https://apiv2.cricket.com.au/web/matchticker/fixtures?Region=AU&format=json';
+
+let prodFixturesSlugCache: TickerFixtureRow[] | null = null;
 
 export class FixtureFetcher {
   /**
@@ -71,14 +75,68 @@ export class FixtureFetcher {
     return FixtureFetcher.getActiveMatchesFromUrl(url);
   }
 
-  private static async getActiveMatchesFromUrl(url: string): Promise<ActiveMatch[]> {
-    const fallbackRow = (): ActiveMatch[] => [
-      { id: FALLBACK_TICKER_FIXTURE_ID, folderSlug: fallbackMatchFolderSlug(FALLBACK_TICKER_FIXTURE_ID) },
-    ];
+  /**
+   * Web-style folder slug `{Home}-vs-{Away}_id{id}` even when the env ticker request failed.
+   */
+  static async resolveFolderSlug(matchId: number, fixtures?: TickerFixtureRow[]): Promise<string> {
+    const fromEnv = folderSlugOverrideFromEnv(matchId);
+    if (fromEnv) {
+      return fromEnv;
+    }
 
+    const hit = fixtures?.find((f) => f.Id === matchId);
+    if (hit) {
+      return buildMatchFolderSlugFromTickerRow(hit);
+    }
+
+    const prodFixtures = await FixtureFetcher.loadProdFixturesForSlug();
+    const prodHit = prodFixtures.find((f) => f.Id === matchId);
+    if (prodHit) {
+      return buildMatchFolderSlugFromTickerRow(prodHit);
+    }
+
+    return fallbackMatchFolderSlug(matchId);
+  }
+
+  private static axiosOptions() {
+    if (process.env.MOBILE_FIXTURES_TLS_INSECURE === '1') {
+      return { httpsAgent: new https.Agent({ rejectUnauthorized: false }) };
+    }
+    return {};
+  }
+
+  private static async fetchFixtures(url: string): Promise<TickerFixtureRow[]> {
+    const response = await axios.get(url, FixtureFetcher.axiosOptions());
+    return response.data?.Fixtures || [];
+  }
+
+  private static async loadProdFixturesForSlug(): Promise<TickerFixtureRow[]> {
+    if (prodFixturesSlugCache) {
+      return prodFixturesSlugCache;
+    }
+    const url = process.env.MOBILE_FIXTURES_URL_PROD ?? DEFAULT_FIXTURES_URL;
     try {
-      const response = await axios.get(url);
-      const fixtures: TickerFixtureRow[] = response.data?.Fixtures || [];
+      prodFixturesSlugCache = await FixtureFetcher.fetchFixtures(url);
+      return prodFixturesSlugCache;
+    } catch (error) {
+      logger.warn(`Could not load prod ticker for folder slugs (${url}): ${error}`);
+      return [];
+    }
+  }
+
+  private static async fallbackActiveMatch(
+    fixtures?: TickerFixtureRow[]
+  ): Promise<ActiveMatch[]> {
+    const folderSlug = await FixtureFetcher.resolveFolderSlug(
+      FALLBACK_TICKER_FIXTURE_ID,
+      fixtures
+    );
+    return [{ id: FALLBACK_TICKER_FIXTURE_ID, folderSlug }];
+  }
+
+  private static async getActiveMatchesFromUrl(url: string): Promise<ActiveMatch[]> {
+    try {
+      const fixtures = await FixtureFetcher.fetchFixtures(url);
       const liveOnly = process.env.MOBILE_FIXTURES_LIVE_ONLY === '1';
 
       const liveFixtures = fixtures.filter((f) => f.IsLive === true && !f.IsCompleted);
@@ -100,15 +158,7 @@ export class FixtureFetcher {
         logger.warn(
           `Ticker ${url}: no IsLive=true rows; MOBILE_FIXTURES_LIVE_ONLY=1. Using fallback id=${FALLBACK_TICKER_FIXTURE_ID}.`
         );
-        const hit = fixtures.find((f) => f.Id === FALLBACK_TICKER_FIXTURE_ID);
-        return [
-          {
-            id: FALLBACK_TICKER_FIXTURE_ID,
-            folderSlug: hit
-              ? buildMatchFolderSlugFromTickerRow(hit)
-              : fallbackMatchFolderSlug(FALLBACK_TICKER_FIXTURE_ID),
-          },
-        ];
+        return FixtureFetcher.fallbackActiveMatch(fixtures);
       }
 
       const now = new Date();
@@ -136,21 +186,13 @@ export class FixtureFetcher {
       logger.warn(
         `Ticker ${url}: no IsLive rows and no in-window fixture. Using fallback id=${FALLBACK_TICKER_FIXTURE_ID} (MOBILE_FALLBACK_MATCH_ID).`
       );
-      const hit = fixtures.find((f) => f.Id === FALLBACK_TICKER_FIXTURE_ID);
-      return [
-        {
-          id: FALLBACK_TICKER_FIXTURE_ID,
-          folderSlug: hit
-            ? buildMatchFolderSlugFromTickerRow(hit)
-            : fallbackMatchFolderSlug(FALLBACK_TICKER_FIXTURE_ID),
-        },
-      ];
+      return FixtureFetcher.fallbackActiveMatch(fixtures);
     } catch (error) {
       logger.error(`Error fetching fixtures from ${url}: ${error}`);
       logger.warn(
         `Using fallback id=${FALLBACK_TICKER_FIXTURE_ID} after ticker error (override: MOBILE_FALLBACK_MATCH_ID).`
       );
-      return fallbackRow();
+      return FixtureFetcher.fallbackActiveMatch();
     }
   }
 }

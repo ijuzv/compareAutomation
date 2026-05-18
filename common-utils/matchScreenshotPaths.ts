@@ -55,3 +55,16 @@ export function buildMatchFolderSlugFromTickerRow(f: TickerFixtureRow): string {
 export function fallbackMatchFolderSlug(id: number): string {
   return sanitizePathSegment(`match_id${id}`);
 }
+
+/** Optional override when ticker fetch fails, e.g. `KXI-vs-MI_id40266` (MOBILE_FALLBACK_FOLDER_SLUG). */
+export function folderSlugOverrideFromEnv(matchId: number): string | undefined {
+  const raw = process.env.MOBILE_FALLBACK_FOLDER_SLUG?.trim();
+  if (!raw) {
+    return undefined;
+  }
+  const envId = Number.parseInt(process.env.MOBILE_FALLBACK_MATCH_ID ?? '', 10);
+  if (!Number.isNaN(envId) && envId !== matchId) {
+    return undefined;
+  }
+  return sanitizePathSegment(raw);
+}

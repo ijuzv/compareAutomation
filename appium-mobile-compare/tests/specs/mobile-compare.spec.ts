@@ -8,7 +8,7 @@ import * as path from 'path';
 import * as fs from 'fs-extra';
 import { driver } from '@wdio/globals';
 import { getSessionDeviceSerial, getSessionEnvName } from '../helpers/session';
-import { versionPrefixForMobileEnv, fallbackMatchFolderSlug } from '../../../common-utils/matchScreenshotPaths';
+import { versionPrefixForMobileEnv } from '../../../common-utils/matchScreenshotPaths';
 
 describe('Appium Mobile API Compare', () => {
     let activeMatches: ActiveMatch[] = [];
@@ -29,7 +29,7 @@ describe('Appium Mobile API Compare', () => {
             );
             const fbId = Number.parseInt(process.env.MOBILE_FALLBACK_MATCH_ID ?? '40266', 10);
             const id = Number.isNaN(fbId) ? 40266 : fbId;
-            activeMatches = [{ id, folderSlug: fallbackMatchFolderSlug(id) }];
+            activeMatches = [{ id, folderSlug: await FixtureFetcher.resolveFolderSlug(id) }];
         }
 
         if (process.env.MOBILE_USE_LEGACY_CONFIG === '1') {
